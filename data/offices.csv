@@ -1,0 +1,16 @@
+office_id,office_name,region,state,has_onsite_imaging,has_onsite_pt
+OFF001,Ashford Heights Orthopaedic Center,Philadelphia Metro,PA,False,True
+OFF002,Brookhaven Orthopaedic Center,Philadelphia Metro,PA,False,False
+OFF003,Chester Mills Orthopaedic Center,Philadelphia Metro,PA,True,False
+OFF004,Dunmore Crossing Orthopaedic Center,Philadelphia Metro,PA,False,False
+OFF005,Elkridge Orthopaedic Center,Philadelphia Metro,PA,True,True
+OFF006,Fairview Junction Orthopaedic Center,Philadelphia Metro,PA,True,False
+OFF007,Grovepoint Orthopaedic Center,South Jersey,NJ,False,False
+OFF008,Harmon Falls Orthopaedic Center,South Jersey,NJ,True,True
+OFF009,Ironwood Orthopaedic Center,South Jersey,NJ,True,True
+OFF010,Juniper Bend Orthopaedic Center,South Jersey,NJ,False,False
+OFF011,Kingsbury Orthopaedic Center,South Jersey,NJ,False,True
+OFF012,Laurel Springs Orthopaedic Center,Central Florida,FL,False,False
+OFF013,Mira Vista Orthopaedic Center,Central Florida,FL,False,True
+OFF014,Northgate Orthopaedic Center,Central Florida,FL,True,True
+OFF015,Oakhurst Bay Orthopaedic Center,Central Florida,FL,True,False

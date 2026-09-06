@@ -1,0 +1,3 @@
+# Phase 1 (Data) dependencies. Backend deps (FastAPI, uvicorn) are added in Phase 2.
+pandas==3.0.5
+numpy==2.5.3

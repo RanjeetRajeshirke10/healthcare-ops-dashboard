@@ -1,0 +1,61 @@
+provider_id,provider_name,subspecialty,primary_office_id,hire_date,is_surgeon
+PRV001,Dr. Daniel Coleman,Physical Medicine & Rehab,OFF006,2015-04-19,False
+PRV002,Dr. Carlos Gupta,Oncology,OFF002,2012-05-27,True
+PRV003,Dr. Raj Anderson,Spine,OFF005,2022-09-07,True
+PRV004,Dr. David Diaz,Sports Medicine,OFF011,2014-01-17,True
+PRV005,Dr. Karen Baker,Sports Medicine,OFF003,2022-03-15,True
+PRV006,Dr. Maria Yoder,Hip & Knee,OFF015,2013-09-09,True
+PRV007,Dr. Michael Zimmerman,Hip & Knee,OFF004,2018-04-21,True
+PRV008,Dr. Charles Edwards,Sports Medicine,OFF006,2025-03-04,True
+PRV009,Dr. Charles Ulrich,Spine,OFF015,2010-08-25,True
+PRV010,Dr. Betty Foster,Foot & Ankle,OFF003,2021-11-04,True
+PRV011,Dr. Nancy Kaplan,Sports Medicine,OFF015,2015-10-30,True
+PRV012,Dr. Priya Quinn,Physical Medicine & Rehab,OFF002,2021-08-17,False
+PRV013,Dr. Sandra Ulrich,Foot & Ankle,OFF010,2011-02-11,True
+PRV014,Dr. Priya Zimmerman,Spine,OFF003,2013-11-02,True
+PRV015,Dr. Elena Baker,Physical Medicine & Rehab,OFF004,2012-11-29,False
+PRV016,Dr. Nancy Foster,Physical Medicine & Rehab,OFF006,2018-02-14,False
+PRV017,Dr. David Hoffman,Sports Medicine,OFF006,2017-08-17,True
+PRV018,Dr. Elena Ibrahim,Spine,OFF014,2026-02-11,True
+PRV019,Dr. Jessica Delgado,Foot & Ankle,OFF009,2013-03-09,True
+PRV020,Dr. William Vasquez,Hip & Knee,OFF008,2012-04-25,True
+PRV021,Dr. Daniel Ibrahim,Hip & Knee,OFF013,2023-12-01,True
+PRV022,Dr. Ashley Delgado,Hip & Knee,OFF004,2014-11-19,True
+PRV023,Dr. Carlos Nakamura,Physical Medicine & Rehab,OFF004,2022-08-22,False
+PRV024,Dr. Karen O'Connell,Foot & Ankle,OFF001,2020-02-20,True
+PRV025,Dr. Raj Martinez,Foot & Ankle,OFF001,2012-07-24,True
+PRV026,Dr. Elena Edwards,Physical Medicine & Rehab,OFF003,2020-08-29,False
+PRV027,Dr. Susan Coleman,Sports Medicine,OFF014,2026-05-11,True
+PRV028,Dr. Michael Anderson,Hand & Wrist,OFF010,2025-11-09,True
+PRV029,Dr. Ashley Edwards,Hip & Knee,OFF004,2020-11-29,True
+PRV030,Dr. Maria Gupta,Hip & Knee,OFF014,2019-06-29,True
+PRV031,Dr. William Hoffman,Foot & Ankle,OFF002,2025-12-16,True
+PRV032,Dr. Sandra Diaz,Sports Medicine,OFF009,2013-06-18,True
+PRV033,Dr. Raj Anderson,Hand & Wrist,OFF007,2015-09-09,True
+PRV034,Dr. Raj Sullivan,Physical Medicine & Rehab,OFF005,2011-02-10,False
+PRV035,Dr. Michael Delgado,Foot & Ankle,OFF009,2012-01-10,True
+PRV036,Dr. Fatima Diaz,Hand & Wrist,OFF012,2013-08-17,True
+PRV037,Dr. Robert Ibrahim,Hand & Wrist,OFF002,2015-09-24,True
+PRV038,Dr. Anthony O'Connell,Spine,OFF004,2025-08-06,True
+PRV039,Dr. Wei Bennett,Hip & Knee,OFF008,2018-05-24,True
+PRV040,Dr. Fatima Thompson,Sports Medicine,OFF011,2022-07-03,True
+PRV041,Dr. David Vasquez,Spine,OFF014,2018-12-06,True
+PRV042,Dr. Fatima Quinn,Sports Medicine,OFF011,2011-03-16,True
+PRV043,Dr. Linda Lawson,Pain Medicine,OFF009,2018-03-17,False
+PRV044,Dr. Ashley Foster,Spine,OFF012,2022-07-29,True
+PRV045,Dr. Thomas Zimmerman,Hip & Knee,OFF011,2015-01-17,True
+PRV046,Dr. Nancy Whitfield,Spine,OFF005,2010-09-13,True
+PRV047,Dr. James Anderson,Spine,OFF005,2012-01-12,True
+PRV048,Dr. Laura Ulrich,Foot & Ankle,OFF013,2020-05-01,True
+PRV049,Dr. Richard Carter,Hand & Wrist,OFF010,2017-10-25,True
+PRV050,Dr. Jessica Ulrich,Physical Medicine & Rehab,OFF002,2016-09-26,False
+PRV051,Dr. Joseph Yoder,Foot & Ankle,OFF010,2020-09-12,True
+PRV052,Dr. Betty Diaz,Sports Medicine,OFF002,2020-05-28,True
+PRV053,Dr. Fatima Martinez,Physical Medicine & Rehab,OFF010,2020-11-08,False
+PRV054,Dr. Robert Diaz,Hip & Knee,OFF013,2010-04-02,True
+PRV055,Dr. Anthony Patel,Hip & Knee,OFF006,2013-09-23,True
+PRV056,Dr. Anthony Bennett,Hip & Knee,OFF015,2026-06-04,True
+PRV057,Dr. Betty Carter,Foot & Ankle,OFF007,2012-09-28,True
+PRV058,Dr. Karen Lawson,Sports Medicine,OFF008,2010-09-30,True
+PRV059,Dr. James Delgado,Hip & Knee,OFF006,2022-09-11,True
+PRV060,Dr. Elena Ibrahim,Hand & Wrist,OFF010,2026-06-27,True
