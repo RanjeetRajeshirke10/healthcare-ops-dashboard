@@ -20,3 +20,6 @@ dist/
 Thumbs.db
 .vscode/
 .idea/
+
+# Audit plans are working documents for this workflow, kept local-only
+docs/audit-plan-phase-*.md
