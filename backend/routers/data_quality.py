@@ -9,9 +9,11 @@ from fastapi import APIRouter, Depends
 
 from ..data_loader import DataStore, get_store
 from ..models.schemas import (
+    DataQualityOverviewResponse,
     DataQualitySummaryResponse,
     DuplicatesResponse,
     FileHealth,
+    FileQualityRow,
     MissingFieldStat,
     OrphanedFkStat,
 )
@@ -19,6 +21,10 @@ from ..models.schemas import (
 router = APIRouter()
 
 YELLOW_THRESHOLD_PCT = 2.0
+
+# completion_date is null by design for an open referral, so it is NOT a
+# completeness defect on its own (see the summary endpoint's note).
+EXPECTED_NULL_COLUMNS = {("ancillary_referrals.csv", "completion_date")}
 
 
 @router.get("/summary", response_model=DataQualitySummaryResponse)
@@ -97,6 +103,115 @@ def get_summary(store: DataStore = Depends(get_store)) -> DataQualitySummaryResp
 
     return DataQualitySummaryResponse(
         missing_fields=missing_fields, orphaned_fks=orphaned_fks, health_by_file=health_by_file,
+    )
+
+
+@router.get("/overview", response_model=DataQualityOverviewResponse)
+def get_overview(store: DataStore = Depends(get_store)) -> DataQualityOverviewResponse:
+    """One trust scorecard: what share of rows carry a real defect, split into
+    the four defect classes, with a per-file breakdown."""
+    ra = store.raw_appointments
+    rr = store.raw_referrals
+    off_ids = set(store.offices["office_id"])
+    prov_ids = set(store.providers["provider_id"])
+    pat_ids = set(store.patients["patient_id"])
+
+    files = {
+        "offices.csv": store.offices,
+        "providers.csv": store.providers,
+        "patients.csv": store.patients,
+        "appointments.csv": ra,
+        "surgeries.csv": store.surgeries,
+        "ancillary_referrals.csv": rr,
+    }
+
+    # Per-file "rows with at least one real defect".
+    appt_issue = (
+        ra["appointment_type"].isna()
+        | ~ra["provider_id"].isin(prov_ids)
+        | ra["appointment_id"].duplicated(keep=False)
+    )
+    pat_issue = store.patients["insurance_type"].isna() | store.patients["home_zip"].isna()
+    ref_issue = (
+        (rr["completed"].astype(bool) & rr["completion_date"].isna())
+        | ~rr["patient_id"].isin(pat_ids)
+        | rr["referral_id"].duplicated(keep=False)
+    )
+    prov_issue = ~store.providers["primary_office_id"].isin(off_ids)
+
+    issue_rows_by_file = {
+        "offices.csv": 0,
+        "providers.csv": int(prov_issue.sum()),
+        "patients.csv": int(pat_issue.sum()),
+        "appointments.csv": int(appt_issue.sum()),
+        "surgeries.csv": 0,
+        "ancillary_referrals.csv": int(ref_issue.sum()),
+    }
+
+    by_file: list[FileQualityRow] = []
+    for name, df in files.items():
+        rows = len(df)
+        issues = issue_rows_by_file[name]
+        pct = round(issues / rows * 100, 2) if rows else 0.0
+        status = "green" if issues == 0 else ("yellow" if pct < YELLOW_THRESHOLD_PCT else "red")
+        by_file.append(FileQualityRow(file=name, rows=rows, issue_rows=issues, issue_pct=pct, status=status))
+
+    # Missing cells (real completeness defects only — expected nulls excluded).
+    missing_by_column: list[dict] = []
+    missing_cells = 0
+    for name, df in files.items():
+        for col, count in df.isna().sum().items():
+            if count > 0 and (name, col) not in EXPECTED_NULL_COLUMNS:
+                missing_cells += int(count)
+                missing_by_column.append({"label": f"{name}.{col}", "value": int(count)})
+    missing_by_column.sort(key=lambda d: d["value"], reverse=True)
+
+    relationships = [
+        ("appointments -> providers", ra["provider_id"], prov_ids),
+        ("appointments -> patients", ra["patient_id"], pat_ids),
+        ("appointments -> offices", ra["office_id"], off_ids),
+        ("surgeries -> providers", store.surgeries["provider_id"], prov_ids),
+        ("surgeries -> patients", store.surgeries["patient_id"], pat_ids),
+        ("surgeries -> offices", store.surgeries["office_id"], off_ids),
+        ("referrals -> patients", rr["patient_id"], pat_ids),
+        ("referrals -> providers", rr["referring_provider_id"], prov_ids),
+        ("referrals -> offices", rr["office_id"], off_ids),
+        ("providers -> offices", store.providers["primary_office_id"], off_ids),
+    ]
+    orphans_by_relationship = [
+        {"label": label, "value": int((~series.isin(valid)).sum())}
+        for label, series, valid in relationships
+    ]
+    orphaned_fk_total = sum(o["value"] for o in orphans_by_relationship)
+    orphans_by_relationship = [o for o in orphans_by_relationship if o["value"] > 0]
+    orphans_by_relationship.sort(key=lambda d: d["value"], reverse=True)
+
+    dup_total = int(ra["appointment_id"].duplicated().sum()) + int(rr["referral_id"].duplicated().sum())
+    inconsistent = int((rr["completed"].astype(bool) & rr["completion_date"].isna()).sum())
+
+    total_rows = sum(len(df) for df in files.values())
+    total_issue_rows = sum(issue_rows_by_file.values())
+
+    return DataQualityOverviewResponse(
+        files_green=sum(1 for r in by_file if r.status == "green"),
+        files_yellow=sum(1 for r in by_file if r.status == "yellow"),
+        files_red=sum(1 for r in by_file if r.status == "red"),
+        total_rows=total_rows,
+        total_issue_rows=total_issue_rows,
+        issue_row_pct=round(total_issue_rows / total_rows * 100, 2) if total_rows else 0.0,
+        missing_cells=missing_cells,
+        orphaned_fk_total=orphaned_fk_total,
+        duplicate_id_total=dup_total,
+        inconsistent_completions=inconsistent,
+        by_file=by_file,
+        issues_by_type=[
+            {"label": "Missing fields", "value": missing_cells},
+            {"label": "Orphaned refs", "value": orphaned_fk_total},
+            {"label": "Duplicate IDs", "value": dup_total},
+            {"label": "Inconsistent", "value": inconsistent},
+        ],
+        missing_by_column=missing_by_column,
+        orphans_by_relationship=orphans_by_relationship,
     )
 
 

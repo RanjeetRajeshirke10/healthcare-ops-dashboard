@@ -1,7 +1,17 @@
+import pandas as pd
 from fastapi import APIRouter, Depends
 
 from ..data_loader import DataStore, get_store
-from ..models.schemas import OfficeRollup, OverviewByOfficeResponse, OverviewSummaryResponse, RegionStats, RollupStats
+from ..models.schemas import (
+    DemographicsResponse,
+    HeatmapCell,
+    OfficeRollup,
+    OverviewByOfficeResponse,
+    OverviewSummaryResponse,
+    RegionStats,
+    RollupStats,
+    VolumeHeatmapResponse,
+)
 from ..utils import (
     SLOTS_PER_PROVIDER_PER_WEEKDAY,
     CommonFilters,
@@ -14,9 +24,13 @@ from ..utils import (
     filtered_surgeries,
     no_show_rate,
     office_region_mask,
+    to_points,
 )
 
 router = APIRouter()
+
+AGE_BAND_EDGES = [0, 18, 35, 50, 65, 80, 200]
+AGE_BAND_LABELS = ["<18", "18-34", "35-49", "50-64", "65-79", "80+"]
 
 
 def _rollup(appts, surgeries, refs) -> dict:
@@ -89,3 +103,58 @@ def get_overview_by_office(
         ))
 
     return OverviewByOfficeResponse(offices=offices_out)
+
+
+@router.get("/demographics", response_model=DemographicsResponse)
+def get_demographics(
+    f: CommonFilters = Depends(common_filters), store: DataStore = Depends(get_store)
+) -> DemographicsResponse:
+    """Not in the original Phase 2 spec — added at the user's request. Scoped
+    the same way total_patients is in /summary: the set of distinct patients
+    who have an appointment matching the current filters."""
+    appts = filtered_appointments(store, f)
+    patient_ids = appts["patient_id"].unique()
+    patients_in_scope = store.patients[store.patients["patient_id"].isin(patient_ids)]
+
+    by_gender_series = patients_in_scope["gender"].fillna("Unknown").value_counts()
+    by_insurance_series = patients_in_scope["insurance_type"].fillna("Unknown").value_counts()
+
+    ref_date = store.appointments["appointment_date"].max()
+    ages = (ref_date - patients_in_scope["date_of_birth"]).dt.days // 365
+    age_band = pd.cut(ages, bins=AGE_BAND_EDGES, labels=AGE_BAND_LABELS, right=False)
+    by_age_series = age_band.value_counts().reindex(AGE_BAND_LABELS, fill_value=0)
+
+    return DemographicsResponse(
+        by_gender=to_points(by_gender_series, round_ndigits=0),
+        by_age_band=to_points(by_age_series, round_ndigits=0),
+        by_insurance=to_points(by_insurance_series, round_ndigits=0),
+    )
+
+
+@router.get("/volume-heatmap", response_model=VolumeHeatmapResponse)
+def get_volume_heatmap(
+    f: CommonFilters = Depends(common_filters), store: DataStore = Depends(get_store)
+) -> VolumeHeatmapResponse:
+    """Appointment counts as a region x month matrix — surfaces regional load
+    and seasonality that the single-line volume trend flattens together.
+    Filtered identically to every other Overview endpoint."""
+    appts = filtered_appointments(store, f)
+    if len(appts) == 0:
+        return VolumeHeatmapResponse(rows=[], columns=[], cells=[])
+
+    office_region_map = dict(zip(store.offices["office_id"], store.offices["region"]))
+    df = appts.assign(
+        region=appts["office_id"].map(office_region_map),
+        month=appts["appointment_date"].dt.to_period("M").astype(str),
+    ).dropna(subset=["region", "month"])
+
+    rows = sorted(df["region"].unique())
+    columns = sorted(df["month"].unique())
+    counts = df.groupby(["region", "month"]).size()
+
+    cells = [
+        HeatmapCell(row=region, column=month, value=int(counts.get((region, month), 0)))
+        for region in rows
+        for month in columns
+    ]
+    return VolumeHeatmapResponse(rows=rows, columns=columns, cells=cells)

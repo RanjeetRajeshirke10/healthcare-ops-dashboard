@@ -31,23 +31,38 @@ SLOTS_PER_PROVIDER_PER_WEEKDAY = 1.1
 class CommonFilters:
     """The start_date/end_date/office_id/region/subspecialty query params every
     endpoint accepts (Phase 2 audit plan Section 1), gathered via one Depends
-    instead of five repeated parameters per endpoint."""
+    instead of five repeated parameters per endpoint.
+
+    office_id/region/subspecialty are each an optional LIST (Phase 3 amendment,
+    2026-09-06): the frontend's filters are multi-select checkboxes, so a
+    dashboard can scope to e.g. two regions at once. Sent as a single
+    comma-separated query value (`?region=South+Jersey,Central+Florida`) rather
+    than repeated params, since that's simpler to build from the frontend.
+    A single value still works exactly as before — it's just a list of one.
+    """
 
     start_date: dt.date | None
     end_date: dt.date | None
-    office_id: str | None
-    region: str | None
-    subspecialty: str | None
+    office_id: list[str] | None
+    region: list[str] | None
+    subspecialty: list[str] | None
+
+
+def _parse_multi(value: str | None) -> list[str] | None:
+    if not value:
+        return None
+    items = [v.strip() for v in value.split(",") if v.strip()]
+    return items or None
 
 
 def common_filters(
     start_date: dt.date | None = Query(None, description="Inclusive lower bound"),
     end_date: dt.date | None = Query(None, description="Inclusive upper bound"),
-    office_id: str | None = Query(None),
-    region: str | None = Query(None),
-    subspecialty: str | None = Query(None),
+    office_id: str | None = Query(None, description="Comma-separated office_id list"),
+    region: str | None = Query(None, description="Comma-separated region list"),
+    subspecialty: str | None = Query(None, description="Comma-separated subspecialty list"),
 ) -> CommonFilters:
-    return CommonFilters(start_date, end_date, office_id, region, subspecialty)
+    return CommonFilters(start_date, end_date, _parse_multi(office_id), _parse_multi(region), _parse_multi(subspecialty))
 
 
 def date_mask(df: pd.DataFrame, col: str, start: dt.date | None, end: dt.date | None) -> pd.Series:
@@ -60,28 +75,28 @@ def date_mask(df: pd.DataFrame, col: str, start: dt.date | None, end: dt.date | 
 
 
 def office_region_mask(df: pd.DataFrame, offices: pd.DataFrame,
-                        office_id: str | None, region: str | None) -> pd.Series:
+                        office_id: list[str] | None, region: list[str] | None) -> pd.Series:
     mask = pd.Series(True, index=df.index)
     if office_id:
-        mask &= df["office_id"] == office_id
+        mask &= df["office_id"].isin(office_id)
     if region:
         region_map = dict(zip(offices["office_id"], offices["region"]))
-        mask &= df["office_id"].map(region_map) == region
+        mask &= df["office_id"].map(region_map).isin(region)
     return mask
 
 
 def subspecialty_mask_via_provider(df: pd.DataFrame, provider_col: str,
-                                    providers: pd.DataFrame, subspecialty: str | None) -> pd.Series:
+                                    providers: pd.DataFrame, subspecialty: list[str] | None) -> pd.Series:
     if not subspecialty:
         return pd.Series(True, index=df.index)
     sub_map = dict(zip(providers["provider_id"], providers["subspecialty"]))
-    return df[provider_col].map(sub_map) == subspecialty
+    return df[provider_col].map(sub_map).isin(subspecialty)
 
 
-def subspecialty_mask_direct(df: pd.DataFrame, subspecialty: str | None) -> pd.Series:
+def subspecialty_mask_direct(df: pd.DataFrame, subspecialty: list[str] | None) -> pd.Series:
     if not subspecialty:
         return pd.Series(True, index=df.index)
-    return df["subspecialty"] == subspecialty
+    return df["subspecialty"].isin(subspecialty)
 
 
 def no_show_rate(df: pd.DataFrame, status_col: str = "status") -> float:
@@ -166,10 +181,10 @@ def filtered_providers(store, f: CommonFilters) -> pd.DataFrame:
     df = store.providers
     mask = pd.Series(True, index=df.index)
     if f.office_id:
-        mask &= df["primary_office_id"] == f.office_id
+        mask &= df["primary_office_id"].isin(f.office_id)
     if f.region:
         region_map = dict(zip(store.offices["office_id"], store.offices["region"]))
-        mask &= df["primary_office_id"].map(region_map) == f.region
+        mask &= df["primary_office_id"].map(region_map).isin(f.region)
     mask &= subspecialty_mask_direct(df, f.subspecialty)
     return df[mask]
 
